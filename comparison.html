@@ -90,6 +90,18 @@
         background: #00007f;
         pointer-events: none;
       }
+      .leaflet-top {
+        display: flex;
+      }
+      .sliderLabel > h3 {
+        font-size: 1em;
+        padding: 12px 14px;
+        background-color: #ffffff;
+        background-color: rgba(255, 255, 255, 0.8);
+        white-space: nowrap;
+        margin-top: 0;
+        font-weight: inherit;
+      }
     </style>
   </head>
 
@@ -149,12 +161,32 @@
         risk_2100_rcp8p5: image("risk_2100_85.png", "risk_2100_85", imageBounds)
       };
 
-      var left_layer = layers.risk_2050_rcp4p5;
-      var right_layer = layers.baseline;
+      var left_layer = layers.baseline;
+      var right_layer = layers.risk_2050_rcp4p5;
 
       left_layer.addTo(map);
       right_layer.addTo(map);
       var slider = L.control.sideBySide(left_layer, right_layer).addTo(map);
+
+      var left_label = L.control({
+        position: "topleft"
+      });
+      left_label.onAdd = function(map) {
+        var div = L.DomUtil.create("div", "sliderLabel");
+        div.innerHTML = `<h3>Baseline</h3>`;
+        return div;
+      };
+      map.addControl(left_label);
+
+      var right_label = L.control({
+        position: "topright"
+      });
+      right_label.onAdd = function(map) {
+        var div = L.DomUtil.create("div", "sliderLabel");
+        div.innerHTML = `<h3 id=right_label>2050 RCP 4.5</h3>`;
+        return div;
+      };
+      map.addControl(right_label);
 
       Array.from(document.getElementsByClassName("tabItem")).forEach(x =>
         x.addEventListener("click", function() {
@@ -163,14 +195,15 @@
             .getElementsByClassName("tabItem selected")[0]
             .classList.remove("selected");
           this.classList.add("selected");
-          map.removeLayer(left_layer);
-          left_layer = layers[this.id];
-          slider.setLeftLayers(left_layer);
-          map.addLayer(left_layer);
+          map.removeLayer(right_layer);
+          right_layer = layers[this.id];
+          slider.setRightLayers(right_layer);
+          map.addLayer(right_layer);
+          document.getElementById("right_label").innerHTML = this.innerHTML;
         })
       );
 
-      var exit = L.control({ position: "topright" });
+      var exit = L.control({ position: "bottomright" });
       exit.onAdd = function(map) {
         var div = L.DomUtil.create("div", "info legend");
         div.innerHTML = `
