@@ -42,23 +42,13 @@
         background: rgba(255, 255, 255, 0.8);
         box-shadow: 0 0 15px rgba(0, 0, 0, 0.2);
         border-radius: 5px;
+        max-height: fit-content;
+        align-self: flex-end;
       }
       .info h4 {
         margin: 0 0 5px;
         color: #777;
       }
-      .legend {
-        line-height: 18px;
-        color: #555;
-      }
-      .legend i {
-        width: 18px;
-        height: 18px;
-        float: left;
-        margin-right: 8px;
-        opacity: 0.7;
-      }
-
       .tabBar {
         display: flex;
         align-content: stretch;
@@ -93,6 +83,11 @@
       .leaflet-top {
         display: flex;
       }
+      .sliderLabel {
+        margin-top: 0 !important;
+        margin-left: 0 !important;
+        margin-right: 0 !important;
+      }
       .sliderLabel > h3 {
         font-size: 1em;
         padding: 12px 14px;
@@ -105,12 +100,15 @@
       .hidden {
         display: none !important;
       }
+      .flex {
+        display: flex;
+      }
     </style>
   </head>
 
   <body>
     <div class="tabBar" id="tabBar">
-      <div id="baseline" class="tabItem selected">Baseline</div>
+      <div id="baseline" class="tabItem selected">Baseline (1997–2012)</div>
       <div id="risk_2050_rcp4p5" class="tabItem">2050 RCP 4.5</div>
       <div id="risk_2050_rcp8p5" class="tabItem">2050 RCP 8.5</div>
       <div id="risk_2100_rcp4p5" class="tabItem">2100 RCP 4.5</div>
@@ -119,10 +117,12 @@
     <div id="map"></div>
 
     <script>
-      var map = L.map("map", { zoomSnap: 0.2 }).fitBounds([
-        [-46.8, -122.4],
-        [60.3, 153]
-      ]);
+      var map = L.map("map", {
+        zoomControl: false,
+        zoomSnap: 0.2,
+        maxBounds: [[-90, -180], [90, 180]],
+        maxBoundsViscosity: 0.7
+      }).fitBounds([[-46.8, -122.4], [60.3, 153]]);
 
       var CartoDB_Positron = L.tileLayer(
         "https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png",
@@ -190,7 +190,7 @@
         thisSlider.getRangeInput().classList.add("hidden");
         setTimeout(() => {
           var oldValue = thisSlider.getValue();
-          var step = oldValue < newValue ? 0.0005 : -0.0005;
+          var step = oldValue < newValue ? 0.001 : -0.001;
           var stop =
             step > 0
               ? oldValue + step >= newValue
@@ -212,7 +212,7 @@
       });
       left_label.onAdd = function(map) {
         var div = L.DomUtil.create("div", "sliderLabel");
-        div.innerHTML = `<h3>Baseline</h3>`;
+        div.innerHTML = `<h3>Baseline (1997–2012)</h3>`;
         return div;
       };
       map.addControl(left_label);
@@ -250,16 +250,23 @@
         })
       );
 
-      var exit = L.control({ position: "bottomright" });
-      exit.onAdd = function(map) {
-        var div = L.DomUtil.create("div", "info legend");
+      var legend = L.control({ position: "bottomright" });
+      legend.onAdd = function(map) {
+        var div = L.DomUtil.create("div", "info");
         div.innerHTML = `
-      <a href="https://josephguillaume.github.io/hydropolitical-interactions/basic.html" target="_blank">
+        <div class=flex>
+        <h4>Relative likelihood of<br/>hydro-political interactions<br/>(Ranking in 1997–2012)</h4>
+        <a href="https://josephguillaume.github.io/hydropolitical-interactions/comparison.html" target="_blank">
         <img src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAoAAAAKCAYAAACNMs+9AAAAQElEQVR42qXKwQkAIAxDUUdxtO6/RBQkQZvSi8I/pL4BoGw/XPkh4XigPmsUgh0626AjRsgxHTkUThsG2T/sIlzdTsp52kSS1wAAAABJRU5ErkJggg==" />
-      </a>`;
+      </a>
+        </div>
+        <img src="legend.png" />
+      `;
         return div;
       };
-      exit.addTo(map);
+      legend.addTo(map);
+
+      L.control.zoom({ position: "bottomleft" }).addTo(map);
     </script>
   </body>
 </html>
