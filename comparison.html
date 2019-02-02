@@ -102,13 +102,16 @@
         margin-top: 0;
         font-weight: inherit;
       }
+      .hidden {
+        display: none !important;
+      }
     </style>
   </head>
 
   <body>
     <div class="tabBar" id="tabBar">
-      <div id="baseline" class="tabItem">Baseline</div>
-      <div id="risk_2050_rcp4p5" class="tabItem selected">2050 RCP 4.5</div>
+      <div id="baseline" class="tabItem selected">Baseline</div>
+      <div id="risk_2050_rcp4p5" class="tabItem">2050 RCP 4.5</div>
       <div id="risk_2050_rcp8p5" class="tabItem">2050 RCP 8.5</div>
       <div id="risk_2100_rcp4p5" class="tabItem">2100 RCP 4.5</div>
       <div id="risk_2100_rcp8p5" class="tabItem">2100 RCP 8.5</div>
@@ -166,7 +169,43 @@
 
       left_layer.addTo(map);
       right_layer.addTo(map);
+
       var slider = L.control.sideBySide(left_layer, right_layer).addTo(map);
+      slider.getRangeInput = function() {
+        return this.getContainer().getElementsByTagName("input")[0];
+      };
+      slider.getValue = function() {
+        return parseFloat(this.getRangeInput().value);
+      };
+      slider.setValue = function(value) {
+        sliderRangeInput = this.getRangeInput();
+        sliderRangeInput.value = value;
+        sliderRangeInput.dispatchEvent(
+          new Event("input", { bubbles: true, cancelable: false })
+        );
+      };
+      slider.animateValue = function(newValue) {
+        thisSlider = this;
+        thisSlider.getRangeInput().disabled = true;
+        thisSlider.getRangeInput().classList.add("hidden");
+        setTimeout(() => {
+          var oldValue = thisSlider.getValue();
+          var step = oldValue < newValue ? 0.0005 : -0.0005;
+          var stop =
+            step > 0
+              ? oldValue + step >= newValue
+              : oldValue + step <= newValue;
+          thisSlider.setValue(oldValue + step);
+          if (stop) {
+            thisSlider.getRangeInput().disabled = false;
+            thisSlider.getRangeInput().classList.remove("hidden");
+          } else {
+            thisSlider.animateValue(newValue);
+          }
+        }, 5);
+      };
+
+      slider.setValue(1);
 
       var left_label = L.control({
         position: "topleft"
@@ -191,15 +230,23 @@
       Array.from(document.getElementsByClassName("tabItem")).forEach(x =>
         x.addEventListener("click", function() {
           if (typeof layers[this.id] === "undefined") return false;
+          if (slider.getRangeInput().disabled) return false;
           document
             .getElementsByClassName("tabItem selected")[0]
             .classList.remove("selected");
           this.classList.add("selected");
+          if (this.id == "baseline") {
+            slider.animateValue(1);
+            return;
+          }
           map.removeLayer(right_layer);
           right_layer = layers[this.id];
           slider.setRightLayers(right_layer);
           map.addLayer(right_layer);
           document.getElementById("right_label").innerHTML = this.innerHTML;
+          if (slider.getValue() == 1) {
+            slider.animateValue(0);
+          }
         })
       );
 
